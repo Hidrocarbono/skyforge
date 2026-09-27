@@ -54,6 +54,19 @@ reais com falhas de continuidade entre as faces.
 - **`pole_treatment.py`**: `blend_weight`/`band_fraction`/`blur_radius`
   são chutes iniciais razoáveis, não calibrados contra percepção humana
   real — precisam de ajuste visual iterativo com panoramas reais.
+  **Teste com foto real já revelou um problema concreto**: a primeira
+  versão usava corte reto na borda da faixa tratada, e isso virou um
+  **disco de borda dura bem visível** nas faces `up`/`dn` depois de
+  reprojetado — pior do que não tratar nada, porque a foto (já gerada por
+  IA) já vinha com pouco detalhe de alta frequência no céu por conta
+  própria. Corrigido trocando o corte reto por uma queda suave
+  (`smoothstep`, peso vai a zero exatamente na borda da faixa). Resultado
+  após a correção: `up` ficou idêntico à versão sem tratamento nenhum
+  (ótimo — o tratamento parou de atrapalhar); `dn` melhorou (sem mais
+  borda dura) mas ainda mostra uma mancha suave visível, porque o chão
+  tem mais contraste natural que o céu e uma média de cor se destaca mais
+  ali. Como `dn` é a face menos exposta ao jogador (normalmente coberta
+  por terreno), isso ficou como ajuste fino pendente, não bloqueante.
 - **`seam_check.py`**: só mede e relata, não corrige — corrigir
   automaticamente entra na categoria "mitigação heurística, nunca
   garantida" (uma foto real pode ter descontinuidade genuína de
