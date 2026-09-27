@@ -1,0 +1,3 @@
+[submodule "external/cmft"]
+	path = external/cmft
+	url = https://github.com/dariomanesku/cmft.git
