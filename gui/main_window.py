@@ -116,7 +116,7 @@ class MainWindow(QMainWindow):
         self.face_size_spin = QSpinBox()
         self.face_size_spin.setRange(64, 4096)
         self.face_size_spin.setSingleStep(64)
-        self.face_size_spin.setValue(1024)
+        self.face_size_spin.setValue(1920)  # default pedido: manter alta resolucao
         params_layout.addWidget(self.face_size_spin)
 
         self.pole_fix_check = QCheckBox("Tratamento de polo (zenite/nadir)")

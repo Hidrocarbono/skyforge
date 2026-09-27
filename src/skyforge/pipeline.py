@@ -30,7 +30,7 @@ def run_pipeline(
     input_equirect: Path,
     output_dir: Path,
     sky_name: str,
-    face_size: int = 1024,
+    face_size: int = 1920,
     apply_pole_fix: bool = True,
     cmft_binary_path: str | Path | None = None,
 ) -> PipelineResult:

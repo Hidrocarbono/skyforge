@@ -74,3 +74,32 @@ reais com falhas de continuidade entre as faces.
 - Teto real de resolução por face aceito pelo fork do engine
   (`Hidrocarbono/xash3d-fwgs`) ainda não foi confirmado — fora do escopo
   deste repositório.
+
+## Primeiro teste real em jogo (PrimeXT)
+
+Skybox gerado a partir da foto real do usuário, carregado de verdade em
+`gfx/env/` e testado no jogo (não só inspeção de arquivo isolado):
+
+- **`ft`/`bk`/`rt`/`lf`**: sem emenda aparente entre as faces do "anel"
+  equatorial. O mapeamento de eixo X/Z (hipótese, nunca validado) parece
+  estar correto o bastante para essas 4 faces — ou ao menos consistente
+  entre si.
+- **`up`**: **linha de costura visível em diagonal** cortando as nuvens,
+  nas 4 screenshots enviadas. Diagnóstico: como o "anel" das 4 faces
+  laterais fecha sem emenda entre si, mas a transição para `up`
+  especificamente mostra descontinuidade, isso aponta para
+  **rotação/orientação errada da face `up`** (`FACE_TRANSFORMS["up"]`
+  ainda está `None`) — não para o eixo (posy→up já está confirmado desde
+  a medição programática) nem para o conteúdo em si (o próprio `up` sem
+  tratamento de polo já tinha sido validado como visualmente limpo).
+- Como não há acesso ao engine PrimeXT nesta sessão para iterar
+  renderizando, foram geradas as 8 variações possíveis de orientação de
+  um quadrado (identidade + rotações de 90/180/270° + 4 reflexões) da
+  face `up`, para o usuário testar por troca direta de arquivo em
+  `gfx/env/` até achar a que fecha sem costura. Assim que confirmado,
+  atualizar `FACE_TRANSFORMS["up"]` em `goldsrc_export.py` com o
+  `PIL.Image.Transpose` correspondente e apagar esse item da lista de
+  pendências.
+- `dn` não foi testado em jogo ainda (raramente visível, prioridade
+  menor) — mas como usa a mesma lógica de eixo que `up`, é provável que
+  precise da mesma correção de rotação assim que `up` for resolvido.

@@ -79,7 +79,7 @@ def export_to_goldsrc(
     mapping: dict[str, str] | None = None,
     transforms: dict[str, Image.Transpose | None] | None = None,
 ) -> dict[str, Path]:
-    """Copia/transforma as 6 faces do cmft para gfx/env/<sky_name><suffix>.tga.
+    """Copia/transforma as 6 faces do cmft para gfx/env/<sky_name>_<suffix>.tga.
 
     Retorna o mapeamento sufixo GoldSrc -> caminho final, para a GUI exibir
     preview ou a chamada seguinte do pipeline reusar.
@@ -96,7 +96,7 @@ def export_to_goldsrc(
 
     for cmft_suffix, goldsrc_suffix in mapping.items():
         src_path = cmft_face_paths[cmft_suffix]
-        dst_path = output_dir / f"{sky_name}{goldsrc_suffix}.tga"
+        dst_path = output_dir / f"{sky_name}_{goldsrc_suffix}.tga"
 
         transform = transforms.get(goldsrc_suffix)
         if transform is None:
