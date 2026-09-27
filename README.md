@@ -67,3 +67,14 @@ gui/
 
 Decisões e debate técnico completo que levou a essa arquitetura:
 `docs/DECISOES.md`.
+
+## Créditos
+
+O SkyForge é construído em cima do trabalho de outras pessoas e depende
+diretamente do [`cmft`](https://github.com/dariomanesku/cmft) (Dario
+Manesku, BSD-2-Clause) como motor de conversão — nenhuma matemática de
+reprojeção equirect→cubemap foi reimplementada aqui. Lista completa de
+dependências, autores e licenças (bibliotecas Python inclusas):
+**[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**.
+
+A mesma lista também aparece dentro do programa, no menu **Ajuda → Sobre**.

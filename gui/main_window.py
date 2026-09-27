@@ -27,6 +27,30 @@ from skyforge.pipeline import PipelineResult, run_pipeline
 
 GOLDSRC_FACE_ORDER = ["up", "ft", "rt", "bk", "lf", "dn"]
 
+# Mantido em sincronia manual com THIRD_PARTY_NOTICES.md na raiz do repo --
+# se uma dependencia for adicionada/removida la, atualizar aqui tambem.
+ABOUT_TEXT = """\
+<h3>SkyForge</h3>
+<p>Ferramenta para gerar skyboxes de 6 faces (convencao GoldSrc/Xash3D) a
+partir de panoramas equirectangulares.</p>
+<p><b>Construido em cima do trabalho de terceiros:</b></p>
+<ul>
+<li><a href="https://github.com/dariomanesku/cmft">cmft</a> -- Dario Manesku
+    (BSD-2-Clause). Motor de reprojecao equirect&rarr;cubemap; o SkyForge
+    nao reimplementa essa matematica.</li>
+<li><a href="https://pypi.org/project/PySide6/">PySide6</a> -- The Qt
+    Company (LGPLv3). Interface grafica.</li>
+<li><a href="https://numpy.org/">NumPy</a> -- NumPy Developers
+    (BSD-3-Clause).</li>
+<li><a href="https://python-pillow.org/">Pillow</a> -- Jeffrey A. Clark e
+    colaboradores (HPND).</li>
+</ul>
+<p>Sucessor espiritual do antigo <b>SkyPaint</b> da comunidade GoldSrc
+(inspiracao de fluxo de trabalho, nenhum codigo reaproveitado).</p>
+<p>Lista completa de creditos e licencas:
+<code>THIRD_PARTY_NOTICES.md</code> no repositorio.</p>
+"""
+
 
 class PipelineWorker(QThread):
     finished_ok = Signal(object)
@@ -54,6 +78,15 @@ class MainWindow(QMainWindow):
         self._input_path: Path | None = None
 
         self._build_ui()
+        self._build_menu()
+
+    def _build_menu(self) -> None:
+        help_menu = self.menuBar().addMenu("&Ajuda")
+        about_action = help_menu.addAction("&Sobre o SkyForge")
+        about_action.triggered.connect(self._on_about)
+
+    def _on_about(self) -> None:
+        QMessageBox.about(self, "Sobre o SkyForge", ABOUT_TEXT)
 
     def _build_ui(self) -> None:
         central = QWidget()
