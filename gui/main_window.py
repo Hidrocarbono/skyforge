@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPlainTextEdit,
+    QProgressBar,
     QPushButton,
     QSpinBox,
     QVBoxLayout,
@@ -141,6 +142,14 @@ class MainWindow(QMainWindow):
         self.run_btn.clicked.connect(self._on_run)
         root.addWidget(self.run_btn)
 
+        # Indeterminada (range 0,0) -- o cmft roda como processo unico sem
+        # progresso granular facil de medir; serve so pra avisar "ainda
+        # trabalhando", nao "quanto falta".
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.setVisible(False)
+        root.addWidget(self.progress_bar)
+
         # --- Preview (cross layout simplificado) --------------------------
         preview_group = QGroupBox("Preview das faces")
         preview_layout = QGridLayout(preview_group)
@@ -188,6 +197,7 @@ class MainWindow(QMainWindow):
             return
 
         self.run_btn.setEnabled(False)
+        self.progress_bar.setVisible(True)
         self._log("Iniciando pipeline...")
 
         self._worker = PipelineWorker(
@@ -205,6 +215,7 @@ class MainWindow(QMainWindow):
 
     def _on_finished_ok(self, result: PipelineResult) -> None:
         self.run_btn.setEnabled(True)
+        self.progress_bar.setVisible(False)
         sr = result.seam_report
         self._log(
             f"Costura de longitude: diff media={sr.mean_abs_diff:.1f} "
@@ -224,5 +235,6 @@ class MainWindow(QMainWindow):
 
     def _on_finished_error(self, message: str) -> None:
         self.run_btn.setEnabled(True)
+        self.progress_bar.setVisible(False)
         self._log(f"ERRO: {message}")
         QMessageBox.critical(self, "SkyForge", message)

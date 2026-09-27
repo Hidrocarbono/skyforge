@@ -15,10 +15,15 @@ Sucessor espiritual do antigo SkyPaint, com duas diferenças centrais:
 
 ## Status
 
-Protótipo inicial. Pipeline de conversão funcional (equirect → 6 faces
-nomeadas), tratamento de polo e checagem de costura ainda em ajuste. A
-correspondência de orientação `cmft` → GoldSrc (`goldsrc_export.py`) **ainda
-não foi validada empiricamente em jogo** — ver aviso no próprio módulo.
+Pipeline de conversão funcional, testado com fotos reais e **validado
+dentro do jogo (PrimeXT)**: `ft`/`bk`/`rt`/`lf`/`up` já confirmados sem
+costura visível — só `dn` ainda não foi testado em jogo (raramente
+visível, coberto por terreno na maioria dos mapas). Detalhes em
+`docs/DECISOES.md`.
+
+Testado até agora só via linha de comando/scripts em Linux. A GUI
+(`main.py`) ainda não foi rodada de verdade em Windows, que é onde o mod
+roda — ver seção de build abaixo.
 
 ## Setup
 
@@ -31,7 +36,10 @@ pip install -r requirements.txt
 
 ### Compilar o `cmft`
 
-O SkyForge chama o binário `cmft_cli` como processo externo. Compilar (Linux):
+O SkyForge chama o binário `cmft_cli` como processo externo — precisa ser
+compilado uma vez, não vem pronto no repositório.
+
+**Linux** (testado nesta sessão de desenvolvimento):
 
 ```bash
 cd external/cmft
@@ -43,8 +51,27 @@ make config=release64 cmft_cli
 
 O binário fica em `external/cmft/_build/linux64_gcc/bin/cmftRelease` (nome
 interno do alvo `cmft_cli`, não é engano — ver comentário em
-`src/skyforge/cmft_wrapper.py`). Aponte `SKYFORGE_CMFT_PATH` para esse
-caminho, ou informe na GUI.
+`src/skyforge/cmft_wrapper.py`).
+
+**Windows** (instruções por leitura do `Makefile`/`scripts/*.lua` do
+`cmft` — **ainda não testado nesta sessão**, que só tem Linux; reportar se
+algum passo não bater):
+
+1. Instale o [MinGW-w64](https://www.mingw-w64.org/) (mais simples que
+   configurar Visual Studio só pra isso) e garanta que `gcc`/`mingw32-make`
+   estão no `PATH`.
+2. No PowerShell/CMD, dentro de `external/cmft`:
+   ```
+   dependency\bx\tools\bin\windows\genie.exe --file=scripts/main.lua --gcc=mingw-gcc gmake
+   cd _projects\gmake-mingw-gcc
+   mingw32-make config=release64 cmft_cli
+   ```
+3. O binário deve ficar em algo como
+   `external/cmft/_build/win64_mingw-gcc/bin/cmftRelease.exe` (mesmo padrão
+   de nome "Release" do build Linux — não é engano, ver nota acima).
+
+Em qualquer plataforma: aponte a variável de ambiente `SKYFORGE_CMFT_PATH`
+pro binário compilado, ou informe o caminho na própria GUI.
 
 ## Rodar
 
@@ -52,17 +79,26 @@ caminho, ou informe na GUI.
 python3 main.py
 ```
 
+Ao abrir, aparece uma tela de carregamento (splash) com o logo do
+SkyForge por ~1,2s antes da janela principal — gerada por
+`scripts/gen_splash.py` (PIL puro, sem asset externo; rode de novo se
+quiser mudar o visual).
+
 ## Arquitetura
 
 ```
 src/skyforge/
 ├── cmft_wrapper.py     # monta e chama o cmft (--output0params tga,bgra8,facelist)
 ├── goldsrc_export.py   # renomeia posx/negx/... -> ft/bk/up/dn/rt/lf (VER AVISO NO ARQUIVO)
+├── pipeline.py          # orquestra: seam_check -> pole_treatment -> cmft -> goldsrc_export
 ├── pole_treatment.py   # tratamento de baixa-frequência da face `up`/`dn`
 ├── seam_check.py       # valida a costura de longitude do equirect de entrada
 └── testpattern.py      # gera padrão de teste rotulado por face, p/ validar orientação em jogo
 gui/
-└── main_window.py      # janela PySide6
+├── main_window.py      # janela PySide6 (entrada, parâmetros, preview, log, progresso)
+└── assets/splash.png   # tela de carregamento, gerada por scripts/gen_splash.py
+scripts/
+└── gen_splash.py       # gera gui/assets/splash.png (reprodutível, sem asset externo)
 ```
 
 Decisões e debate técnico completo que levou a essa arquitetura:
