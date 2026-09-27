@@ -5,6 +5,12 @@ cada dependência de terceiro usada no projeto, sua licença e um link para o
 projeto original — é importante que esse crédito fique visível e não se
 perca com o tempo.
 
+## Autores da versão inicial (v0.1.0)
+
+**Hidrocarboneto** e **Claude** (Anthropic) — desenvolvimento do SkyForge.
+Ver [`LICENSE`](LICENSE) (MIT): uso e adaptação livres, sem
+responsabilidade dos autores, exigindo apenas manter este crédito.
+
 ## Motor de conversão
 
 ### cmft

@@ -11,7 +11,7 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from .cmft_wrapper import CmftResult, convert_equirect_to_facelist, find_cmft_binary
 from .goldsrc_export import export_to_goldsrc
@@ -35,6 +35,12 @@ def run_pipeline(
     cmft_binary_path: str | Path | None = None,
 ) -> PipelineResult:
     equirect = Image.open(input_equirect)
+    # JPEG/PNG frequentemente carregam orientacao EXIF (fotos de celular);
+    # Image.open NAO aplica isso sozinho -- sem essa linha, uma entrada com
+    # orientacao EXIF "de lado" seria processada errada em silencio, sem
+    # nenhum erro. TGA nunca teve esse problema (por isso nao aparecia
+    # antes de aceitarmos JPEG/PNG/BMP como entrada).
+    equirect = ImageOps.exif_transpose(equirect)
 
     seam_report = check_longitude_seam(equirect)
 

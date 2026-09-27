@@ -171,3 +171,46 @@ inteiro (GUI, dependências, splash) **e** um `cmft.exe` já compilado num
 Resultado: artefato `SkyForge-windows` no Actions, um `SkyForge.exe` só,
 sem precisar de Python/pip/variável de ambiente nenhuma no computador de
 quem só quer usar o programa.
+
+**Confirmado pelo usuário rodando de verdade no Windows dele** — primeira
+vez que o SkyForge roda fora desta sessão de desenvolvimento.
+
+## Formatos de entrada, versão, licença e idioma (pós-validação em Windows)
+
+Pedidos do usuário depois do teste bem-sucedido: aceitar PNG/JPG/TGA/BMP
+como entrada (não só TGA), mostrar a versão no Sobre, definir uma licença
+(gratuita, comunidade adapta livremente, sem responsabilidade dos autores,
+só exige crédito da versão inicial), e um menu de idioma PT/EN com
+bandeiras.
+
+**Formatos de entrada** — custo real avaliado antes de implementar: baixo,
+porque o pipeline já reconvertia pra TGA internamente antes de chamar o
+`cmft` (`pipeline.py` já fazia `equirect.convert("RGB").save(...tga)`),
+então só o filtro do seletor de arquivo na GUI estava travado em `.tga`.
+**Bug real encontrado ao avaliar o impacto** (não só teórico): JPEG/PNG
+frequentemente carregam tag EXIF de orientação (fotos de celular), e
+`Image.open()` do Pillow não aplica isso sozinho — sem correção, uma
+entrada com EXIF de rotação seria processada errada, em silêncio, sem
+nenhum erro (TGA nunca teve esse problema, por isso nunca apareceu antes).
+Corrigido com `ImageOps.exif_transpose()` logo após abrir a imagem em
+`pipeline.py`, com teste dedicado (`tests/test_pipeline_exif.py`).
+**Caveat de qualidade documentado, não é bug**: JPEG com compressão baixa
+pode introduzir artefato de blocagem, mais visível no céu (gradiente
+suave) — confirmado na prática: mesmo panorama sintético deu diff de
+costura maior em JPEG (5.71) do que em PNG/BMP sem perda (3.85).
+
+**Versão**: `src/skyforge/__init__.py` define `__version__ = "0.1.0"` —
+primeira versão numerada, correspondendo exatamente ao que foi validado
+rodando de verdade no Windows do usuário.
+
+**Licença**: MIT (`LICENSE`), com o texto de copyright creditando
+Hidrocarboneto e Claude (Anthropic) como autores da versão inicial. Já
+era exatamente o que o usuário descreveu (gratuito, comunidade adapta como
+quiser, sem responsabilidade dos autores, só exige manter o crédito) —
+não precisou de licença nova, só ajustar o nome no cabeçalho.
+
+**Idioma**: `gui/i18n.py` (dicionário pt/en) + `MainWindow.retranslate()`
+em `main_window.py`, chamado no `__init__` e sempre que o usuário troca de
+idioma pelo menu (com bandeiras via emoji Unicode, sem precisar de asset
+de imagem novo). Preferência persistida via `QSettings`, sobrevive a
+reabrir o programa.

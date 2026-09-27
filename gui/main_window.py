@@ -4,8 +4,8 @@ from pathlib import Path
 
 from PIL import Image
 from PIL.ImageQt import ImageQt
-from PySide6.QtCore import QThread, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QSettings, QThread, Signal
+from PySide6.QtGui import QActionGroup, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -24,33 +24,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from i18n import DEFAULT_LANGUAGE, LANGUAGES, tr
+from skyforge import __version__
 from skyforge.pipeline import PipelineResult, run_pipeline
 
 GOLDSRC_FACE_ORDER = ["up", "ft", "rt", "bk", "lf", "dn"]
-
-# Mantido em sincronia manual com THIRD_PARTY_NOTICES.md na raiz do repo --
-# se uma dependencia for adicionada/removida la, atualizar aqui tambem.
-ABOUT_TEXT = """\
-<h3>SkyForge</h3>
-<p>Ferramenta para gerar skyboxes de 6 faces (convencao GoldSrc/Xash3D) a
-partir de panoramas equirectangulares.</p>
-<p><b>Construido em cima do trabalho de terceiros:</b></p>
-<ul>
-<li><a href="https://github.com/dariomanesku/cmft">cmft</a> -- Dario Manesku
-    (BSD-2-Clause). Motor de reprojecao equirect&rarr;cubemap; o SkyForge
-    nao reimplementa essa matematica.</li>
-<li><a href="https://pypi.org/project/PySide6/">PySide6</a> -- The Qt
-    Company (LGPLv3). Interface grafica.</li>
-<li><a href="https://numpy.org/">NumPy</a> -- NumPy Developers
-    (BSD-3-Clause).</li>
-<li><a href="https://python-pillow.org/">Pillow</a> -- Jeffrey A. Clark e
-    colaboradores (HPND).</li>
-</ul>
-<p>Sucessor espiritual do antigo <b>SkyPaint</b> da comunidade GoldSrc
-(inspiracao de fluxo de trabalho, nenhum codigo reaproveitado).</p>
-<p>Lista completa de creditos e licencas:
-<code>THIRD_PARTY_NOTICES.md</code> no repositorio.</p>
-"""
 
 
 class PipelineWorker(QThread):
@@ -72,22 +50,55 @@ class PipelineWorker(QThread):
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("SkyForge")
         self.resize(900, 700)
+
+        self._settings = QSettings("Hidrocarbono", "SkyForge")
+        self._lang = self._settings.value("language", DEFAULT_LANGUAGE)
+        if self._lang not in LANGUAGES:
+            self._lang = DEFAULT_LANGUAGE
 
         self._worker: PipelineWorker | None = None
         self._input_path: Path | None = None
 
         self._build_ui()
         self._build_menu()
+        self.retranslate()
+
+    def tr_(self, key: str, **kwargs) -> str:
+        return tr(self._lang, key, **kwargs)
+
+    # --- Menu -------------------------------------------------------------
 
     def _build_menu(self) -> None:
-        help_menu = self.menuBar().addMenu("&Ajuda")
-        about_action = help_menu.addAction("&Sobre o SkyForge")
-        about_action.triggered.connect(self._on_about)
+        self._help_menu = self.menuBar().addMenu("")
+        self._about_action = self._help_menu.addAction("")
+        self._about_action.triggered.connect(self._on_about)
+
+        self._lang_menu = self.menuBar().addMenu("")
+        lang_group = QActionGroup(self)
+        lang_group.setExclusive(True)
+        self._lang_actions = {}
+        for code, label in LANGUAGES.items():
+            action = self._lang_menu.addAction(label)
+            action.setCheckable(True)
+            action.setChecked(code == self._lang)
+            action.triggered.connect(lambda checked, c=code: self._on_change_language(c))
+            lang_group.addAction(action)
+            self._lang_actions[code] = action
+
+    def _on_change_language(self, code: str) -> None:
+        self._lang = code
+        self._settings.setValue("language", code)
+        self.retranslate()
 
     def _on_about(self) -> None:
-        QMessageBox.about(self, "Sobre o SkyForge", ABOUT_TEXT)
+        QMessageBox.about(
+            self,
+            self.tr_("menu_about"),
+            self.tr_("about_html", version=f"v{__version__}"),
+        )
+
+    # --- UI -----------------------------------------------------------------
 
     def _build_ui(self) -> None:
         central = QWidget()
@@ -95,50 +106,52 @@ class MainWindow(QMainWindow):
         root = QVBoxLayout(central)
 
         # --- Entrada ---------------------------------------------------
-        input_group = QGroupBox("Entrada")
-        input_layout = QHBoxLayout(input_group)
+        self.input_group = QGroupBox()
+        input_layout = QHBoxLayout(self.input_group)
         self.input_line = QLineEdit()
         self.input_line.setReadOnly(True)
-        browse_btn = QPushButton("Selecionar panorama (.tga)...")
-        browse_btn.clicked.connect(self._on_browse_input)
+        self.browse_input_btn = QPushButton()
+        self.browse_input_btn.clicked.connect(self._on_browse_input)
         input_layout.addWidget(self.input_line)
-        input_layout.addWidget(browse_btn)
-        root.addWidget(input_group)
+        input_layout.addWidget(self.browse_input_btn)
+        root.addWidget(self.input_group)
 
         # --- Parametros --------------------------------------------------
-        params_group = QGroupBox("Parametros")
-        params_layout = QHBoxLayout(params_group)
+        self.params_group = QGroupBox()
+        params_layout = QHBoxLayout(self.params_group)
 
-        params_layout.addWidget(QLabel("Nome do sky:"))
+        self.sky_name_label = QLabel()
+        params_layout.addWidget(self.sky_name_label)
         self.sky_name_line = QLineEdit("meusky")
         params_layout.addWidget(self.sky_name_line)
 
-        params_layout.addWidget(QLabel("Resolucao por face:"))
+        self.face_size_label = QLabel()
+        params_layout.addWidget(self.face_size_label)
         self.face_size_spin = QSpinBox()
         self.face_size_spin.setRange(64, 4096)
         self.face_size_spin.setSingleStep(64)
         self.face_size_spin.setValue(1920)  # default pedido: manter alta resolucao
         params_layout.addWidget(self.face_size_spin)
 
-        self.pole_fix_check = QCheckBox("Tratamento de polo (zenite/nadir)")
+        self.pole_fix_check = QCheckBox()
         self.pole_fix_check.setChecked(True)
         params_layout.addWidget(self.pole_fix_check)
 
-        root.addWidget(params_group)
+        root.addWidget(self.params_group)
 
         # --- Saida ------------------------------------------------------
-        output_group = QGroupBox("Saida")
-        output_layout = QHBoxLayout(output_group)
+        self.output_group = QGroupBox()
+        output_layout = QHBoxLayout(self.output_group)
         self.output_line = QLineEdit()
         self.output_line.setReadOnly(True)
-        output_browse_btn = QPushButton("Selecionar pasta de saida...")
-        output_browse_btn.clicked.connect(self._on_browse_output)
+        self.browse_output_btn = QPushButton()
+        self.browse_output_btn.clicked.connect(self._on_browse_output)
         output_layout.addWidget(self.output_line)
-        output_layout.addWidget(output_browse_btn)
-        root.addWidget(output_group)
+        output_layout.addWidget(self.browse_output_btn)
+        root.addWidget(self.output_group)
 
         # --- Acao ---------------------------------------------------------
-        self.run_btn = QPushButton("Gerar skybox")
+        self.run_btn = QPushButton()
         self.run_btn.clicked.connect(self._on_run)
         root.addWidget(self.run_btn)
 
@@ -151,8 +164,8 @@ class MainWindow(QMainWindow):
         root.addWidget(self.progress_bar)
 
         # --- Preview (cross layout simplificado) --------------------------
-        preview_group = QGroupBox("Preview das faces")
-        preview_layout = QGridLayout(preview_group)
+        self.preview_group = QGroupBox()
+        preview_layout = QGridLayout(self.preview_group)
         self.preview_labels: dict[str, QLabel] = {}
         positions = {
             "up": (0, 1), "lf": (1, 0), "ft": (1, 1),
@@ -165,40 +178,67 @@ class MainWindow(QMainWindow):
             lbl.setScaledContents(True)
             preview_layout.addWidget(lbl, row, col)
             self.preview_labels[suffix] = lbl
-        root.addWidget(preview_group)
+        root.addWidget(self.preview_group)
 
         # --- Log ------------------------------------------------------------
         self.log_box = QPlainTextEdit()
         self.log_box.setReadOnly(True)
         root.addWidget(self.log_box)
 
+    def retranslate(self) -> None:
+        """Reaplica todos os textos visiveis no idioma atual (self._lang).
+        Chamado no __init__ e sempre que o usuario troca de idioma no menu.
+        """
+        self.setWindowTitle(self.tr_("window_title"))
+
+        self._help_menu.setTitle(self.tr_("menu_help"))
+        self._about_action.setText(self.tr_("menu_about"))
+        self._lang_menu.setTitle(self.tr_("menu_language"))
+
+        self.input_group.setTitle(self.tr_("group_input"))
+        self.browse_input_btn.setText(self.tr_("browse_input"))
+
+        self.params_group.setTitle(self.tr_("group_params"))
+        self.sky_name_label.setText(self.tr_("label_sky_name"))
+        self.face_size_label.setText(self.tr_("label_face_size"))
+        self.pole_fix_check.setText(self.tr_("check_pole_fix"))
+
+        self.output_group.setTitle(self.tr_("group_output"))
+        self.browse_output_btn.setText(self.tr_("browse_output"))
+
+        self.run_btn.setText(self.tr_("run_button"))
+        self.preview_group.setTitle(self.tr_("group_preview"))
+
     def _log(self, message: str) -> None:
         self.log_box.appendPlainText(message)
 
     def _on_browse_input(self) -> None:
         path, _ = QFileDialog.getOpenFileName(
-            self, "Selecionar panorama equirectangular", "", "TGA (*.tga)"
+            self,
+            self.tr_("dialog_select_input"),
+            "",
+            self.tr_("file_filter_input"),
         )
         if path:
             self._input_path = Path(path)
             self.input_line.setText(path)
 
     def _on_browse_output(self) -> None:
-        path = QFileDialog.getExistingDirectory(self, "Selecionar pasta de saida")
+        path = QFileDialog.getExistingDirectory(self, self.tr_("dialog_select_output"))
         if path:
             self.output_line.setText(path)
 
     def _on_run(self) -> None:
         if not self._input_path:
-            QMessageBox.warning(self, "SkyForge", "Selecione um panorama de entrada primeiro.")
+            QMessageBox.warning(self, "SkyForge", self.tr_("warn_no_input"))
             return
         if not self.output_line.text():
-            QMessageBox.warning(self, "SkyForge", "Selecione uma pasta de saida primeiro.")
+            QMessageBox.warning(self, "SkyForge", self.tr_("warn_no_output"))
             return
 
         self.run_btn.setEnabled(False)
         self.progress_bar.setVisible(True)
-        self._log("Iniciando pipeline...")
+        self._log(self.tr_("log_starting"))
 
         self._worker = PipelineWorker(
             dict(
@@ -217,11 +257,10 @@ class MainWindow(QMainWindow):
         self.run_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         sr = result.seam_report
+        self._log(self.tr_("log_seam", diff=sr.mean_abs_diff, visible=sr.likely_visible))
         self._log(
-            f"Costura de longitude: diff media={sr.mean_abs_diff:.1f} "
-            f"(provavelmente visivel: {sr.likely_visible})"
+            self.tr_("log_exported", path=list(result.goldsrc_faces.values())[0].parent)
         )
-        self._log(f"6 faces exportadas em: {list(result.goldsrc_faces.values())[0].parent}")
 
         for suffix, path in result.goldsrc_faces.items():
             if suffix in self.preview_labels:
@@ -231,10 +270,10 @@ class MainWindow(QMainWindow):
                 pil_img = Image.open(path).convert("RGBA")
                 self.preview_labels[suffix].setPixmap(QPixmap.fromImage(ImageQt(pil_img)))
 
-        self._log("Concluido.")
+        self._log(self.tr_("log_done"))
 
     def _on_finished_error(self, message: str) -> None:
         self.run_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
-        self._log(f"ERRO: {message}")
+        self._log(self.tr_("log_error", message=message))
         QMessageBox.critical(self, "SkyForge", message)

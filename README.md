@@ -1,8 +1,17 @@
 # SkyForge
 
-Ferramenta com GUI para transformar um panorama equirectangular (2:1), já
-tratado por IA para ter continuidade mínima, num skybox de 6 faces no
-formato clássico GoldSrc/Xash3D (`ft/bk/up/dn/rt/lf.tga`).
+**Versão atual: v0.1.0**
+
+Ferramenta com GUI para transformar um panorama equirectangular (2:1) —
+aceita PNG, JPG, TGA ou BMP como entrada — já tratado por IA para ter
+continuidade mínima, num skybox de 6 faces no formato clássico
+GoldSrc/Xash3D (`ft/bk/up/dn/rt/lf.tga`). Interface em português e inglês
+(trocável a qualquer momento, menu **Idioma**).
+
+**Licença: MIT** — gratuito, qualquer um pode adaptar/redistribuir como
+quiser, sem responsabilidade dos autores por qualquer dano; a única
+exigência é manter os créditos da versão original. Texto completo em
+[`LICENSE`](LICENSE).
 
 Sucessor espiritual do antigo SkyPaint, com duas diferenças centrais:
 
@@ -33,9 +42,8 @@ costura visível — só `dn` ainda não foi testado em jogo (raramente
 visível, coberto por terreno na maioria dos mapas). Detalhes em
 `docs/DECISOES.md`.
 
-Testado até agora só via linha de comando/scripts em Linux. A GUI
-(`main.py`) ainda não foi rodada de verdade em Windows, que é onde o mod
-roda — ver seção de build abaixo.
+**Testado rodando de verdade no Windows do usuário** (`SkyForge.exe`
+empacotado via PyInstaller) — não é mais só teoria/simulação nesta sessão.
 
 ## Setup (para desenvolvimento)
 
@@ -121,6 +129,7 @@ src/skyforge/
 └── testpattern.py      # gera padrão de teste rotulado por face, p/ validar orientação em jogo
 gui/
 ├── main_window.py      # janela PySide6 (entrada, parâmetros, preview, log, progresso)
+├── i18n.py             # traduções pt/en, usadas por main_window.retranslate()
 └── assets/splash.png   # tela de carregamento, gerada por scripts/gen_splash.py
 scripts/
 └── gen_splash.py       # gera gui/assets/splash.png (reprodutível, sem asset externo)
@@ -151,11 +160,14 @@ Decisões e debate técnico completo que levou a essa arquitetura:
 
 ## Créditos
 
-O SkyForge é construído em cima do trabalho de outras pessoas e depende
-diretamente do [`cmft`](https://github.com/dariomanesku/cmft) (Dario
-Manesku, BSD-2-Clause) como motor de conversão — nenhuma matemática de
-reprojeção equirect→cubemap foi reimplementada aqui. Lista completa de
+**Autores da versão inicial (v0.1.0): Hidrocarboneto e Claude (Anthropic).**
+
+O SkyForge também é construído em cima do trabalho de outras pessoas e
+depende diretamente do [`cmft`](https://github.com/dariomanesku/cmft)
+(Dario Manesku, BSD-2-Clause) como motor de conversão — nenhuma matemática
+de reprojeção equirect→cubemap foi reimplementada aqui. Lista completa de
 dependências, autores e licenças (bibliotecas Python inclusas):
 **[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**.
 
-A mesma lista também aparece dentro do programa, no menu **Ajuda → Sobre**.
+A mesma lista, junto com a versão e a licença, também aparece dentro do
+programa, no menu **Ajuda → Sobre**.
