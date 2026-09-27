@@ -1,0 +1,87 @@
+name: Build SkyForge.exe (Windows, for dummies)
+
+# Gera um unico executavel Windows com tudo embutido (GUI + cmft.exe) --
+# a pessoa baixa o SkyForge.exe e clica, sem instalar Python nem nada
+# mais. Dois jobs: o primeiro cross-compila o cmft.exe (Linux, ja
+# validado rodando sob Wine -- ver build-cmft-windows.yml); o segundo
+# roda num runner Windows de verdade, porque o PyInstaller empacota o
+# proprio interpretador Python e precisa rodar no SO alvo (nao da pra
+# cross-compilar um .exe do PyInstaller a partir do Linux).
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "src/**"
+      - "gui/**"
+      - "main.py"
+      - "build_windows.spec"
+      - "requirements*.txt"
+      - "external/cmft/**"
+      - "patches/**"
+      - ".github/workflows/build-skyforge-windows.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build-cmft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Instalar toolchain mingw-w64
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Aplicar patch de compatibilidade MinGW
+        run: git -C external/cmft apply ../../patches/cmft-fix-mingw-compiler-detection.patch
+
+      - name: Compilar cmft.exe
+        working-directory: external/cmft
+        run: |
+          mkdir -p /tmp/build
+          x86_64-w64-mingw32-g++ -std=c++11 -msse2 -fno-rtti -fno-exceptions -O2 \
+            -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_CONSTANT_MACROS \
+            -Idependency -Isrc/cmft -Isrc -Iinclude \
+            src/cmft/allocator.cpp \
+            src/cmft/cubemapfilter.cpp \
+            src/cmft/clcontext.cpp \
+            src/cmft/image.cpp \
+            src/cmft/common/stb_image.cpp \
+            src/cmft/common/print.cpp \
+            src/main.cpp \
+            -o /tmp/build/cmft.exe \
+            -static -lgdi32 -lopengl32
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cmft-exe-for-bundling
+          path: /tmp/build/cmft.exe
+          retention-days: 1
+
+  build-app:
+    needs: build-cmft
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: cmft-exe-for-bundling
+          path: .
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias (incluindo PyInstaller)
+        run: pip install -r requirements-build.txt
+
+      - name: Empacotar com PyInstaller
+        run: pyinstaller --noconfirm build_windows.spec
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SkyForge-windows
+          path: dist/SkyForge.exe
+          retention-days: 90

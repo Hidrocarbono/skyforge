@@ -145,3 +145,29 @@ máquina Windows real.
 mesmo processo (aplicar patch, cross-compilar, testar sob Wine, publicar
 artefato) a cada push relevante — assim o binário de Windows fica sempre
 disponível pra baixar em Actions, sem precisar repetir manualmente.
+
+## "For dummies": um único .exe, sem instalar nada
+
+Pedido do usuário: ter o `cmft.exe` pronto pra baixar já resolve o
+problema de compilar, mas ainda exige instalar Python, PySide6 e apontar
+`SKYFORGE_CMFT_PATH` manualmente — não é "baixa e clica" de verdade.
+
+Resolvido com PyInstaller (`build_windows.spec`), empacotando o app Python
+inteiro (GUI, dependências, splash) **e** um `cmft.exe` já compilado num
+único executável Windows. Duas mudanças de código pra isso funcionar:
+
+1. `cmft_wrapper.find_cmft_binary()` ganhou uma etapa de busca no diretório
+   onde o PyInstaller descompacta os dados embutidos (`sys._MEIPASS` em
+   modo `--onefile`) — sem isso, o app empacotado não acharia o `cmft.exe`
+   que vai junto dele sem o usuário precisar configurar nada.
+2. `.github/workflows/build-skyforge-windows.yml`: **dois jobs**. O
+   primeiro (Ubuntu) cross-compila o `cmft.exe` do jeito já validado; o
+   segundo (Windows de verdade, `windows-latest`) baixa esse binário e
+   roda o PyInstaller — isso **precisa** ser num runner Windows real,
+   porque o PyInstaller empacota o próprio interpretador Python pra
+   aquele SO especificamente, diferente do `cmft.exe` (C++ puro, dá pra
+   cross-compilar).
+
+Resultado: artefato `SkyForge-windows` no Actions, um `SkyForge.exe` só,
+sem precisar de Python/pip/variável de ambiente nenhuma no computador de
+quem só quer usar o programa.

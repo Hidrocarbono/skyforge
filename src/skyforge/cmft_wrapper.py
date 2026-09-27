@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -39,18 +40,48 @@ class CmftResult:
     stdout: str
 
 
+_BUNDLED_NAMES = ("cmft.exe", "cmft", "cmftRelease.exe", "cmftRelease")
+
+
+def _bundled_cmft_dir() -> Path | None:
+    """Pasta onde um binario do cmft embutido pelo PyInstaller apareceria.
+
+    Empacotado em --onefile, o PyInstaller descompacta os dados em
+    sys._MEIPASS (pasta temporaria) a cada execucao; em --onedir, os dados
+    ficam ao lado do proprio .exe (Path(sys.executable).parent). Checamos
+    os dois -- ver build_windows.spec, que declara cmft.exe como datas.
+    """
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            return Path(meipass)
+        return Path(sys.executable).parent
+    return None
+
+
 def find_cmft_binary(explicit_path: str | Path | None = None) -> Path:
     """Localiza o binario cmft_cli.
 
     O alvo de build se chama `cmft_cli` no Makefile/genie, mas o binario
     gerado e nomeado `cmftRelease`/`cmftDebug` (config do genie, nao erro de
     empacotamento -- ver README).
+
+    Ordem de busca: caminho explicito (parametro/GUI) -> binario embutido
+    pelo PyInstaller (build "for dummies", ver build_windows.spec) -> PATH
+    do sistema.
     """
     if explicit_path:
         p = Path(explicit_path)
         if not p.is_file():
             raise CmftError(f"Binario do cmft nao encontrado em: {p}")
         return p
+
+    bundled_dir = _bundled_cmft_dir()
+    if bundled_dir:
+        for name in _BUNDLED_NAMES:
+            candidate = bundled_dir / name
+            if candidate.is_file():
+                return candidate
 
     found = shutil.which("cmft") or shutil.which("cmftRelease") or shutil.which("cmft_cli")
     if found:

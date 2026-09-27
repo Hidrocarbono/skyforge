@@ -13,6 +13,18 @@ Sucessor espiritual do antigo SkyPaint, com duas diferenças centrais:
    de maior distorção da projeção equirectangular e o mais exposto ao
    jogador (ver `docs/DECISOES.md`).
 
+## Baixar e usar (sem instalar nada)
+
+Vá em **Actions** no repositório no GitHub → abra a execução mais recente
+de **"Build SkyForge.exe (Windows, for dummies)"** → baixe o artefato
+**`SkyForge-windows`** → extraia → dê duplo clique em `SkyForge.exe`.
+
+Não precisa instalar Python, PySide6 nem o `cmft` separadamente — tudo já
+vem embutido num único executável (gerado via PyInstaller,
+`build_windows.spec`). Esse é o caminho recomendado pra quem só quer usar
+o programa; as seções abaixo (Setup, compilar o `cmft`) são só pra quem
+vai mexer no código.
+
 ## Status
 
 Pipeline de conversão funcional, testado com fotos reais e **validado
@@ -25,7 +37,7 @@ Testado até agora só via linha de comando/scripts em Linux. A GUI
 (`main.py`) ainda não foi rodada de verdade em Windows, que é onde o mod
 roda — ver seção de build abaixo.
 
-## Setup
+## Setup (para desenvolvimento)
 
 ```bash
 git clone --recurse-submodules https://github.com/Hidrocarbono/skyforge
@@ -114,9 +126,25 @@ scripts/
 └── gen_splash.py       # gera gui/assets/splash.png (reprodutível, sem asset externo)
 patches/
 └── cmft-fix-mingw-compiler-detection.patch  # corrige bug de deteção de compilador do cmft
+build_windows.spec       # empacota tudo (app + cmft.exe) num SkyForge.exe unico (PyInstaller)
+requirements-build.txt   # requirements.txt + pyinstaller
 .github/workflows/
-└── build-cmft-windows.yml  # compila cmft.exe (cross-compile) a cada push relevante
+├── build-cmft-windows.yml     # compila so o cmft.exe (cross-compile) a cada push relevante
+└── build-skyforge-windows.yml # empacota o SkyForge.exe completo (2 jobs: cmft + PyInstaller)
 ```
+
+### Gerar o `.exe` empacotado você mesmo (em vez de baixar do Actions)
+
+Precisa rodar no Windows (PyInstaller empacota o próprio interpretador
+Python, não dá pra cross-compilar isso do Linux, diferente do `cmft.exe`):
+
+```
+pip install -r requirements-build.txt
+# coloque um cmft.exe compilado na raiz do repo antes deste passo
+pyinstaller --noconfirm build_windows.spec
+```
+
+Resultado em `dist/SkyForge.exe`.
 
 Decisões e debate técnico completo que levou a essa arquitetura:
 `docs/DECISOES.md`.
