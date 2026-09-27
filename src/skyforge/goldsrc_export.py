@@ -4,39 +4,29 @@ necessario.
 
 STATUS DA VALIDACAO -- LEIA ANTES DE USAR EM PRODUCAO
 -------------------------------------------------------
-O mapeamento abaixo AINDA E UMA HIPOTESE, nao uma correspondencia
-confirmada -- e o resultado de tentar validar isso de duas formas
-diferentes ja mostrou por que nenhum atalho sintetico resolve essa pergunta
-sozinho:
+O mapeamento de EIXO abaixo (GOLDSRC_FACE_MAPPING) foi validado em jogo de
+verdade (PrimeXT, nao so screenshot solto de arquivo): `ft`/`bk`/`rt`/`lf`
+fecham sem emenda entre si, confirmando o mapeamento X/Z que antes era so
+hipotese. `up` e `dn` (eixo Y) ja tinham confirmacao numerica desde antes
+(ver historico em docs/DECISOES.md).
 
-1. Primeira tentativa: leitura visual de screenshots das 6 faces. Rendeu
-   uma conclusao ERRADA (troquei duas imagens parecidas sem perceber).
-2. Segunda tentativa: medir a cor RGB dominante de cada face
-   programaticamente (mais confiavel que olho humano) e comparar contra a
-   formula esferica padrao usada em testpattern.py. Resultado, reproduzido
-   identico em 4 combinacoes de resolucao de entrada/face (nao e ruido):
-   o eixo Y bate certinho (posy vira a face `up`, negy vira `dn`), mas os
-   eixos X/Z NAO batem com a formula esferica ingenua -- o `cmft` usa
-   internamente uma convencao de longitude diferente da nossa pra esses
-   dois eixos. Ou seja: nem a medicao numerica resolve a pergunta que
-   importa (qual direcao fisica = frente/tras/direita/esquerda no jogo),
-   ela so prova que testpattern.py e o `cmft` "falam dialetos diferentes"
-   de coordenada -- uma informacao util, mas nao a resposta final.
+ROTACAO (FACE_TRANSFORMS) -- `up` confirmado, `dn` ainda pendente:
+No primeiro teste em jogo, `up` sem transformacao mostrava uma costura
+diagonal visivel nas nuvens (o anel ft/bk/rt/lf fechava certo, so a
+transicao pra `up` estava errada -- ou seja, era rotacao, nao eixo nem
+conteudo). Testado com as 8 variacoes possiveis de orientacao de um
+quadrado, `ROTATE_270` foi confirmado em jogo como a correta.
 
-CONCLUSAO: a correspondencia semantica (qual arquivo do cmft deve virar
-`ft`/`bk`/`rt`/`lf`) SO pode ser confirmada carregando o resultado de
-verdade no jogo (ou pxmv/pxsv) e olhando pra qual direcao cada face
-aparece. Nao existe atalho sintetico pra essa etapa -- os eixos up/dn sao
-a excecao, esses dois JA estao confirmados (ver ponto 2 acima).
+`dn` usa a mesma logica de eixo que `up` e nunca foi testado em jogo
+(raramente visivel, coberto por terreno) -- e PROVAVEL que precise da
+mesma rotacao ou de uma relacionada, mas isso ainda e hipotese ate
+confirmar visualmente. Nao copiar o valor de `up` as cegas.
 
-Antes de usar uma saida real do SkyForge no mod:
-1. Rode testpattern.py e passe pelo pipeline completo.
-2. Carregue o resultado em gfx/env/ e confira NO JOGO (nao por screenshot
-   solto -- olhar a textura fora de contexto e exatamente o que causou o
-   erro do item 1 acima) se cada face aparece na direcao certa, sem
-   espelhamento/rotacao.
-3. Ajuste GOLDSRC_FACE_MAPPING e FACE_TRANSFORMS conforme o que a
-   validacao em jogo mostrar, e so entao apague este aviso.
+Antes de confiar num skybox novo gerado pelo SkyForge:
+1. Rode o pipeline completo com a foto/panorama real.
+2. Carregue em gfx/env/ e confira NO JOGO (nao por screenshot isolado de
+   arquivo -- ja causou leitura errada aqui antes) se cada face fecha sem
+   costura visivel, principalmente em `dn`, que ainda nao foi validado.
 """
 
 from __future__ import annotations
@@ -46,9 +36,7 @@ from pathlib import Path
 
 from PIL import Image
 
-# HIPOTESE para os eixos X/Z (rt/lf/ft/bk), NAO VALIDADA -- ver aviso no
-# topo do arquivo. posy->up e negy->dn SAO confirmados (unica parte que a
-# medicao programatica conseguiu provar).
+# Validado em jogo (PrimeXT) -- ver status de validacao no topo do arquivo.
 GOLDSRC_FACE_MAPPING: dict[str, str] = {
     "posx": "rt",
     "negx": "lf",
@@ -58,14 +46,15 @@ GOLDSRC_FACE_MAPPING: dict[str, str] = {
     "negy": "dn",
 }
 
-# Transformacoes por face (aplicadas ANTES de salvar), caso a validacao em
-# jogo mostre que alguma face esta espelhada ou rotacionada. Chaves sao o
-# sufixo GoldSrc de destino. Valores sao metodos de PIL.Image.transpose ou
-# None.
+# Transformacoes por face (aplicadas ANTES de salvar). Chaves sao o sufixo
+# GoldSrc de destino. Valores sao metodos de PIL.Image.transpose ou None.
+# `up` confirmado em jogo com ROTATE_270 -- ver status de validacao no topo
+# do arquivo. `dn` continua None (hipotese nao testada, nao copiar de `up`
+# as cegas).
 FACE_TRANSFORMS: dict[str, Image.Transpose | None] = {
     "ft": None,
     "bk": None,
-    "up": None,
+    "up": Image.Transpose.ROTATE_270,
     "dn": None,
     "rt": None,
     "lf": None,

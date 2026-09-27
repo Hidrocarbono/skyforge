@@ -87,19 +87,18 @@ Skybox gerado a partir da foto real do usuário, carregado de verdade em
 - **`up`**: **linha de costura visível em diagonal** cortando as nuvens,
   nas 4 screenshots enviadas. Diagnóstico: como o "anel" das 4 faces
   laterais fecha sem emenda entre si, mas a transição para `up`
-  especificamente mostra descontinuidade, isso aponta para
-  **rotação/orientação errada da face `up`** (`FACE_TRANSFORMS["up"]`
-  ainda está `None`) — não para o eixo (posy→up já está confirmado desde
-  a medição programática) nem para o conteúdo em si (o próprio `up` sem
-  tratamento de polo já tinha sido validado como visualmente limpo).
-- Como não há acesso ao engine PrimeXT nesta sessão para iterar
-  renderizando, foram geradas as 8 variações possíveis de orientação de
-  um quadrado (identidade + rotações de 90/180/270° + 4 reflexões) da
-  face `up`, para o usuário testar por troca direta de arquivo em
-  `gfx/env/` até achar a que fecha sem costura. Assim que confirmado,
-  atualizar `FACE_TRANSFORMS["up"]` em `goldsrc_export.py` com o
-  `PIL.Image.Transpose` correspondente e apagar esse item da lista de
-  pendências.
-- `dn` não foi testado em jogo ainda (raramente visível, prioridade
-  menor) — mas como usa a mesma lógica de eixo que `up`, é provável que
-  precise da mesma correção de rotação assim que `up` for resolvido.
+  especificamente mostrava descontinuidade, isso apontava para
+  **rotação/orientação errada da face `up`**, não para o eixo (já
+  confirmado) nem para o conteúdo (o próprio `up` sem tratamento de polo
+  já tinha sido validado como visualmente limpo).
+- Geradas as 8 variações possíveis de orientação de um quadrado
+  (identidade + rotações de 90/180/270° + 4 reflexões) da face `up` para
+  teste direto em jogo, já que não há acesso ao engine PrimeXT nesta
+  sessão para iterar renderizando. **`ROTATE_270` confirmado pelo usuário
+  como a correta** — já fixado em `FACE_TRANSFORMS["up"]` em
+  `goldsrc_export.py`.
+- `dn` ainda não foi testado em jogo (raramente visível, coberto por
+  terreno na maioria dos mapas) — usa a mesma lógica de eixo que `up`,
+  então é uma hipótese razoável que precise de rotação parecida, mas
+  **não foi copiado às cegas**: `FACE_TRANSFORMS["dn"]` continua `None`
+  até confirmação visual própria.
