@@ -53,22 +53,35 @@ O binário fica em `external/cmft/_build/linux64_gcc/bin/cmftRelease` (nome
 interno do alvo `cmft_cli`, não é engano — ver comentário em
 `src/skyforge/cmft_wrapper.py`).
 
-**Windows** (instruções por leitura do `Makefile`/`scripts/*.lua` do
-`cmft` — **ainda não testado nesta sessão**, que só tem Linux; reportar se
-algum passo não bater):
+**Windows (cmft.exe)**: a forma mais simples e já validada não é compilar
+no próprio Windows — é baixar o `.exe` pronto do **GitHub Actions**
+(`.github/workflows/build-cmft-windows.yml`), que compila via
+cross-compilação a cada push relevante. Vá em **Actions** no repositório
+no GitHub, abra a execução mais recente de "Build cmft.exe (Windows)" e
+baixe o artefato `cmft-windows-x64`.
 
-1. Instale o [MinGW-w64](https://www.mingw-w64.org/) (mais simples que
-   configurar Visual Studio só pra isso) e garanta que `gcc`/`mingw32-make`
-   estão no `PATH`.
-2. No PowerShell/CMD, dentro de `external/cmft`:
-   ```
-   dependency\bx\tools\bin\windows\genie.exe --file=scripts/main.lua --gcc=mingw-gcc gmake
-   cd _projects\gmake-mingw-gcc
-   mingw32-make config=release64 cmft_cli
-   ```
-3. O binário deve ficar em algo como
-   `external/cmft/_build/win64_mingw-gcc/bin/cmftRelease.exe` (mesmo padrão
-   de nome "Release" do build Linux — não é engano, ver nota acima).
+Por que não compilar direto no Windows: o `cmft` tem um bug de detecção de
+compilador que confunde qualquer GCC/MinGW mirando Windows com MSVC
+(`_WIN32` é checado antes de `__GNUC__`), quebrando a build com MinGW
+nativo do mesmo jeito que quebraria cruzando do Linux. **Corrigido** via
+`patches/cmft-fix-mingw-compiler-detection.patch` (aplicado automaticamente
+pelo workflow do GitHub Actions) — ver o cabeçalho do patch pra detalhes.
+Testado nesta sessão: compilado por cross-compilação (`mingw-w64` no
+Linux) e **rodado de verdade sob Wine**, convertendo um panorama real com
+sucesso.
+
+Se preferir compilar você mesmo em vez de baixar do Actions (Linux, com
+`mingw-w64` instalado):
+```bash
+git -C external/cmft apply ../../patches/cmft-fix-mingw-compiler-detection.patch
+cd external/cmft
+x86_64-w64-mingw32-g++ -std=c++11 -msse2 -fno-rtti -fno-exceptions -O2 \
+  -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_CONSTANT_MACROS \
+  -Idependency -Isrc/cmft -Isrc -Iinclude \
+  src/cmft/allocator.cpp src/cmft/cubemapfilter.cpp src/cmft/clcontext.cpp \
+  src/cmft/image.cpp src/cmft/common/stb_image.cpp src/cmft/common/print.cpp \
+  src/main.cpp -o cmft.exe -static -lgdi32 -lopengl32
+```
 
 Em qualquer plataforma: aponte a variável de ambiente `SKYFORGE_CMFT_PATH`
 pro binário compilado, ou informe o caminho na própria GUI.
@@ -99,6 +112,10 @@ gui/
 └── assets/splash.png   # tela de carregamento, gerada por scripts/gen_splash.py
 scripts/
 └── gen_splash.py       # gera gui/assets/splash.png (reprodutível, sem asset externo)
+patches/
+└── cmft-fix-mingw-compiler-detection.patch  # corrige bug de deteção de compilador do cmft
+.github/workflows/
+└── build-cmft-windows.yml  # compila cmft.exe (cross-compile) a cada push relevante
 ```
 
 Decisões e debate técnico completo que levou a essa arquitetura:

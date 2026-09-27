@@ -1,0 +1,62 @@
+name: Build cmft.exe (Windows)
+
+# Compila o cmft.exe via cross-compilacao (mingw-w64 rodando em Ubuntu),
+# em vez de um runner windows-latest -- essa abordagem foi validada
+# manualmente nesta sessao de desenvolvimento (compila e roda de verdade
+# sob Wine) e evita a incerteza de configurar um toolchain MinGW nativo
+# num runner Windows, que o proprio script de build do cmft nao suporta
+# sem o patch abaixo de qualquer forma (ver patches/*.patch).
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "external/cmft/**"
+      - "patches/**"
+      - ".github/workflows/build-cmft-windows.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (com submodulos)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Instalar toolchain mingw-w64
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64
+
+      - name: Aplicar patch de compatibilidade MinGW
+        run: git -C external/cmft apply ../../patches/cmft-fix-mingw-compiler-detection.patch
+
+      - name: Compilar cmft.exe
+        working-directory: external/cmft
+        run: |
+          mkdir -p /tmp/build
+          x86_64-w64-mingw32-g++ -std=c++11 -msse2 -fno-rtti -fno-exceptions -O2 \
+            -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_CONSTANT_MACROS \
+            -Idependency -Isrc/cmft -Isrc -Iinclude \
+            src/cmft/allocator.cpp \
+            src/cmft/cubemapfilter.cpp \
+            src/cmft/clcontext.cpp \
+            src/cmft/image.cpp \
+            src/cmft/common/stb_image.cpp \
+            src/cmft/common/print.cpp \
+            src/main.cpp \
+            -o /tmp/build/cmft.exe \
+            -static -lgdi32 -lopengl32
+
+      - name: Testar o binario sob Wine
+        run: |
+          sudo apt-get install -y wine64
+          export WINEDEBUG=-all
+          wine /tmp/build/cmft.exe --help | head -5
+
+      - name: Publicar artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmft-windows-x64
+          path: /tmp/build/cmft.exe
+          retention-days: 90

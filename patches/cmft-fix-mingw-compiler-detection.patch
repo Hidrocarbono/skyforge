@@ -1,0 +1,53 @@
+# Correção: deteção de compilador do cmft trata qualquer GCC/MinGW mirando
+# Windows como se fosse MSVC.
+#
+# platform.h checa "defined(_WIN32) || defined(_WIN64)" ANTES de checar
+# "defined(__GNUC__)" -- mas o MinGW (nativo no Windows ou cruzado a partir
+# do Linux, via x86_64-w64-mingw32-gcc) define AMBOS _WIN32 (a plataforma
+# alvo) e __GNUC__ (o compilador real). Como o teste de MSVC vem primeiro,
+# o cmft conclui erroneamente "é MSVC" e usa a sintaxe de pragma __pragma(),
+# que é exclusiva do MSVC e não existe no GCC -- erro de compilação
+# ("expected constructor, destructor, or type conversion before '(' token"
+# em utils.h, dentro da macro CMFT_PRAGMA_DIAGNOSTIC_PUSH_MSVC_).
+#
+# Corrigido reordenando a cadeia #if/#elif: __clang__ e __GNUC__ (que só
+# compiladores de verdade Clang/GCC definem) são checados antes de
+# _WIN32/_WIN64 (que só indica a PLATAFORMA alvo, não o compilador).
+# Reprodutível e confirmado nesta sessão: compilado com sucesso via
+# x86_64-w64-mingw32-g++ (cross-compile Linux->Windows) depois desta
+# correção, e testado rodando de verdade sob Wine.
+#
+# Ainda não reportado upstream em github.com/dariomanesku/cmft -- vale
+# abrir uma issue/PR lá em algum momento, mas por enquanto aplicamos como
+# patch local (submódulo git não pode ficar com estado sujo sem commit
+# real em algum remoto).
+#
+# Aplicar (a partir da raiz do repo SkyForge):
+#   git -C external/cmft apply ../../patches/cmft-fix-mingw-compiler-detection.patch
+#
+diff --git a/src/cmft/common/platform.h b/src/cmft/common/platform.h
+index b98b0c8..7e9a963 100644
+--- a/src/cmft/common/platform.h
++++ b/src/cmft/common/platform.h
+@@ -35,15 +35,15 @@
+ // Impl.
+ //------------------------------------------------------------
+
+-#if defined(_WIN32) || defined(_WIN64)
+-#   undef CMFT_COMPILER_MSVC
+-#   define CMFT_COMPILER_MSVC 1
++#if defined(__clang__)
++#   undef CMFT_COMPILER_CLANG
++#   define CMFT_COMPILER_CLANG 1
+ #elif defined(__GNUC__)
+ #   undef CMFT_COMPILER_GCC
+ #   define CMFT_COMPILER_GCC 1
+-#elif defined(__clang__)
+-#   undef CMFT_COMPILER_CLANG
+-#   define CMFT_COMPILER_CLANG 1
++#elif defined(_WIN32) || defined(_WIN64)
++#   undef CMFT_COMPILER_MSVC
++#   define CMFT_COMPILER_MSVC 1
+ #endif
+
+ #if (0                      \
