@@ -87,5 +87,3 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: dist/SkyForge.exe
           body_path: .github/release-notes/${{ github.event.inputs.tag || github.ref_name }}.md
-          generate_release_notes: true
-          append_body: true
