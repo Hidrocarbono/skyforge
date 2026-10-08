@@ -1,51 +1,52 @@
+[Versão em português](README.pt-BR.md)
+
 # SkyForge
 
-**Versão atual: v0.1.0**
+**Current version: v0.1.0**
 
-Ferramenta com GUI para transformar um panorama equirectangular (2:1) —
-aceita PNG, JPG, TGA ou BMP como entrada — já tratado por IA para ter
-continuidade mínima, num skybox de 6 faces no formato clássico
-GoldSrc/Xash3D (`ft/bk/up/dn/rt/lf.tga`). Interface em português e inglês
-(trocável a qualquer momento, menu **Idioma**).
+A GUI tool that turns an equirectangular panorama (2:1) — accepts PNG,
+JPG, TGA or BMP as input — already AI-processed for minimal continuity,
+into a 6-face skybox in the classic GoldSrc/Xash3D format
+(`ft/bk/up/dn/rt/lf.tga`). Interface available in Portuguese and English
+(switchable at any time via the **Language** menu).
 
-**Licença: MIT** — gratuito, qualquer um pode adaptar/redistribuir como
-quiser, sem responsabilidade dos autores por qualquer dano; a única
-exigência é manter os créditos da versão original. Texto completo em
+**License: MIT** — free, anyone can adapt/redistribute it however they
+like, with no liability for the authors for any kind of damage; the only
+requirement is keeping credit for the original version. Full text in
 [`LICENSE`](LICENSE).
 
-Sucessor espiritual do antigo SkyPaint, com duas diferenças centrais:
+Spiritual successor to the old SkyPaint, with two key differences:
 
-1. Usa o [`cmft`](https://github.com/dariomanesku/cmft) (BSD-2-Clause) como
-   motor de reprojeção equirect → cubemap, em vez de reimplementar a
-   matemática de projeção do zero.
-2. Trata a face `up` (zênite) de forma diferente das outras 5 — é o ponto
-   de maior distorção da projeção equirectangular e o mais exposto ao
-   jogador (ver `docs/DECISOES.md`).
+1. Uses [`cmft`](https://github.com/dariomanesku/cmft) (BSD-2-Clause) as
+   the equirect → cubemap reprojection engine, instead of reimplementing
+   the projection math from scratch.
+2. Treats the `up` (zenith) face differently from the other 5 — it's the
+   point of maximum distortion in the equirectangular projection and the
+   one most exposed to the player (see `docs/DECISOES.md`, in Portuguese).
 
-## Baixar e usar (sem instalar nada)
+## Download and use (nothing to install)
 
-Vá em **Actions** no repositório no GitHub → abra a execução mais recente
-de **"Build SkyForge.exe (Windows, for dummies)"** → baixe o artefato
-**`SkyForge-windows`** → extraia → dê duplo clique em `SkyForge.exe`.
+Go to **[Releases](https://github.com/Hidrocarbono/skyforge/releases)** →
+download `SkyForge.exe` from the latest release → double-click it.
 
-Não precisa instalar Python, PySide6 nem o `cmft` separadamente — tudo já
-vem embutido num único executável (gerado via PyInstaller,
-`build_windows.spec`). Esse é o caminho recomendado pra quem só quer usar
-o programa; as seções abaixo (Setup, compilar o `cmft`) são só pra quem
-vai mexer no código.
+No need to install Python, PySide6, or `cmft` separately — everything is
+bundled into a single executable (built with PyInstaller,
+`build_windows.spec`). This is the recommended path for anyone who just
+wants to use the program; the sections below (Setup, building `cmft`) are
+only for people working on the code.
 
 ## Status
 
-Pipeline de conversão funcional, testado com fotos reais e **validado
-dentro do jogo (PrimeXT)**: `ft`/`bk`/`rt`/`lf`/`up` já confirmados sem
-costura visível — só `dn` ainda não foi testado em jogo (raramente
-visível, coberto por terreno na maioria dos mapas). Detalhes em
-`docs/DECISOES.md`.
+Functional conversion pipeline, tested with real photos and **validated
+in-game (PrimeXT)**: `ft`/`bk`/`rt`/`lf`/`up` already confirmed seamless —
+only `dn` hasn't been tested in-game yet (rarely visible, usually covered
+by terrain on most maps). Details in `docs/DECISOES.md` (Portuguese).
 
-**Testado rodando de verdade no Windows do usuário** (`SkyForge.exe`
-empacotado via PyInstaller) — não é mais só teoria/simulação nesta sessão.
+**Tested running for real on the user's Windows machine** (`SkyForge.exe`
+bundled via PyInstaller) — not just theory/simulation in a development
+session.
 
-## Setup (para desenvolvimento)
+## Setup (for development)
 
 ```bash
 git clone --recurse-submodules https://github.com/Hidrocarbono/skyforge
@@ -54,12 +55,12 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Compilar o `cmft`
+### Building `cmft`
 
-O SkyForge chama o binário `cmft_cli` como processo externo — precisa ser
-compilado uma vez, não vem pronto no repositório.
+SkyForge calls the `cmft_cli` binary as an external process — it needs to
+be built once, it doesn't ship pre-built in the repository.
 
-**Linux** (testado nesta sessão de desenvolvimento):
+**Linux** (tested during this project's development):
 
 ```bash
 cd external/cmft
@@ -69,29 +70,28 @@ cd _projects/gmake-linux
 make config=release64 cmft_cli
 ```
 
-O binário fica em `external/cmft/_build/linux64_gcc/bin/cmftRelease` (nome
-interno do alvo `cmft_cli`, não é engano — ver comentário em
-`src/skyforge/cmft_wrapper.py`).
+The binary ends up at `external/cmft/_build/linux64_gcc/bin/cmftRelease`
+(the internal name for the `cmft_cli` target — not a mistake, see the
+comment in `src/skyforge/cmft_wrapper.py`).
 
-**Windows (cmft.exe)**: a forma mais simples e já validada não é compilar
-no próprio Windows — é baixar o `.exe` pronto do **GitHub Actions**
-(`.github/workflows/build-cmft-windows.yml`), que compila via
-cross-compilação a cada push relevante. Vá em **Actions** no repositório
-no GitHub, abra a execução mais recente de "Build cmft.exe (Windows)" e
-baixe o artefato `cmft-windows-x64`.
+**Windows (cmft.exe)**: the simplest, already-validated way is not to
+compile on Windows itself — it's to download the ready-made `.exe` from
+**GitHub Actions** (`.github/workflows/build-cmft-windows.yml`), which
+cross-compiles it on every relevant push. Go to **Actions** in the GitHub
+repository, open the latest "Build cmft.exe (Windows)" run, and download
+the `cmft-windows-x64` artifact.
 
-Por que não compilar direto no Windows: o `cmft` tem um bug de detecção de
-compilador que confunde qualquer GCC/MinGW mirando Windows com MSVC
-(`_WIN32` é checado antes de `__GNUC__`), quebrando a build com MinGW
-nativo do mesmo jeito que quebraria cruzando do Linux. **Corrigido** via
-`patches/cmft-fix-mingw-compiler-detection.patch` (aplicado automaticamente
-pelo workflow do GitHub Actions) — ver o cabeçalho do patch pra detalhes.
-Testado nesta sessão: compilado por cross-compilação (`mingw-w64` no
-Linux) e **rodado de verdade sob Wine**, convertendo um panorama real com
-sucesso.
+Why not build directly on Windows: `cmft` has a compiler-detection bug
+that misidentifies any GCC/MinGW targeting Windows as MSVC (`_WIN32` is
+checked before `__GNUC__`), breaking the build with native MinGW the same
+way it would break cross-compiling from Linux. **Fixed** via
+`patches/cmft-fix-mingw-compiler-detection.patch` (applied automatically
+by the GitHub Actions workflow) — see the patch header for details.
+Tested during development: cross-compiled (`mingw-w64` on Linux) and
+**actually run under Wine**, successfully converting a real panorama.
 
-Se preferir compilar você mesmo em vez de baixar do Actions (Linux, com
-`mingw-w64` instalado):
+If you'd rather build it yourself instead of downloading from Actions
+(Linux, with `mingw-w64` installed):
 ```bash
 git -C external/cmft apply ../../patches/cmft-fix-mingw-compiler-detection.patch
 cd external/cmft
@@ -103,71 +103,70 @@ x86_64-w64-mingw32-g++ -std=c++11 -msse2 -fno-rtti -fno-exceptions -O2 \
   src/main.cpp -o cmft.exe -static -lgdi32 -lopengl32
 ```
 
-Em qualquer plataforma: aponte a variável de ambiente `SKYFORGE_CMFT_PATH`
-pro binário compilado, ou informe o caminho na própria GUI.
+On any platform: point the `SKYFORGE_CMFT_PATH` environment variable to
+the compiled binary, or provide the path in the GUI itself.
 
-## Rodar
+## Running
 
 ```bash
 python3 main.py
 ```
 
-Ao abrir, aparece uma tela de carregamento (splash) com o logo do
-SkyForge por ~1,2s antes da janela principal — gerada por
-`scripts/gen_splash.py` (PIL puro, sem asset externo; rode de novo se
-quiser mudar o visual).
+On startup, a splash screen with the SkyForge logo shows for ~1.2s before
+the main window appears — generated by `scripts/gen_splash.py` (pure
+PIL, no external asset; re-run it if you want to change the look).
 
-## Arquitetura
+## Architecture
 
 ```
 src/skyforge/
-├── cmft_wrapper.py     # monta e chama o cmft (--output0params tga,bgra8,facelist)
-├── goldsrc_export.py   # renomeia posx/negx/... -> ft/bk/up/dn/rt/lf (VER AVISO NO ARQUIVO)
-├── pipeline.py          # orquestra: seam_check -> pole_treatment -> cmft -> goldsrc_export
-├── pole_treatment.py   # tratamento de baixa-frequência da face `up`/`dn`
-├── seam_check.py       # valida a costura de longitude do equirect de entrada
-└── testpattern.py      # gera padrão de teste rotulado por face, p/ validar orientação em jogo
+├── cmft_wrapper.py     # builds and calls cmft (--output0params tga,bgra8,facelist)
+├── goldsrc_export.py   # renames posx/negx/... -> ft/bk/up/dn/rt/lf (SEE WARNING IN FILE)
+├── pipeline.py          # orchestrates: seam_check -> pole_treatment -> cmft -> goldsrc_export
+├── pole_treatment.py   # low-frequency treatment for the `up`/`dn` face
+├── seam_check.py       # validates the longitude seam of the input equirect
+└── testpattern.py      # generates a per-face labeled test pattern, for in-game orientation checks
 gui/
-├── main_window.py      # janela PySide6 (entrada, parâmetros, preview, log, progresso)
-├── i18n.py             # traduções pt/en, usadas por main_window.retranslate()
-└── assets/splash.png   # tela de carregamento, gerada por scripts/gen_splash.py
+├── main_window.py      # PySide6 window (input, parameters, preview, log, progress)
+├── i18n.py             # pt/en translations, used by main_window.retranslate()
+└── assets/splash.png   # splash screen, generated by scripts/gen_splash.py
 scripts/
-└── gen_splash.py       # gera gui/assets/splash.png (reprodutível, sem asset externo)
+└── gen_splash.py       # generates gui/assets/splash.png (reproducible, no external asset)
 patches/
-└── cmft-fix-mingw-compiler-detection.patch  # corrige bug de deteção de compilador do cmft
-build_windows.spec       # empacota tudo (app + cmft.exe) num SkyForge.exe unico (PyInstaller)
+└── cmft-fix-mingw-compiler-detection.patch  # fixes cmft's compiler-detection bug
+build_windows.spec       # bundles everything (app + cmft.exe) into a single SkyForge.exe (PyInstaller)
 requirements-build.txt   # requirements.txt + pyinstaller
 .github/workflows/
-├── build-cmft-windows.yml     # compila so o cmft.exe (cross-compile) a cada push relevante
-└── build-skyforge-windows.yml # empacota o SkyForge.exe completo (2 jobs: cmft + PyInstaller)
+├── build-cmft-windows.yml     # builds only cmft.exe (cross-compile) on every relevant push
+└── build-skyforge-windows.yml # bundles the full SkyForge.exe (2 jobs: cmft + PyInstaller)
 ```
 
-### Gerar o `.exe` empacotado você mesmo (em vez de baixar do Actions)
+### Building the bundled `.exe` yourself (instead of downloading from Actions)
 
-Precisa rodar no Windows (PyInstaller empacota o próprio interpretador
-Python, não dá pra cross-compilar isso do Linux, diferente do `cmft.exe`):
+Needs to run on Windows (PyInstaller bundles the Python interpreter
+itself, unlike `cmft.exe` this can't be cross-compiled from Linux):
 
 ```
 pip install -r requirements-build.txt
-# coloque um cmft.exe compilado na raiz do repo antes deste passo
+# place a compiled cmft.exe at the repo root before this step
 pyinstaller --noconfirm build_windows.spec
 ```
 
-Resultado em `dist/SkyForge.exe`.
+Result at `dist/SkyForge.exe`.
 
-Decisões e debate técnico completo que levou a essa arquitetura:
-`docs/DECISOES.md`.
+Full technical decision log and debate that led to this architecture:
+`docs/DECISOES.md` (Portuguese).
 
-## Créditos
+## Credits
 
-**Autores da versão inicial (v0.1.0): Hidrocarboneto e Claude (Anthropic).**
+**Authors of the initial version (v0.1.0): Hidrocarboneto and Claude
+(Anthropic).**
 
-O SkyForge também é construído em cima do trabalho de outras pessoas e
-depende diretamente do [`cmft`](https://github.com/dariomanesku/cmft)
-(Dario Manesku, BSD-2-Clause) como motor de conversão — nenhuma matemática
-de reprojeção equirect→cubemap foi reimplementada aqui. Lista completa de
-dependências, autores e licenças (bibliotecas Python inclusas):
-**[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**.
+SkyForge is also built on top of other people's work and depends directly
+on [`cmft`](https://github.com/dariomanesku/cmft) (Dario Manesku,
+BSD-2-Clause) as its conversion engine — no reprojection math was
+reimplemented here. Full list of dependencies, authors and licenses
+(including Python libraries): **[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)**.
 
-A mesma lista, junto com a versão e a licença, também aparece dentro do
-programa, no menu **Ajuda → Sobre**.
+The same list, along with the version and license, also appears inside
+the program, under **Help → About**.
